@@ -31,8 +31,6 @@ public class Specifiedelementatspecifiedpostion {
 		System.out.println("After adding");
 		System.out.println("************");
 		System.out.println(linkedList);
-
-
 	}
 
 }
