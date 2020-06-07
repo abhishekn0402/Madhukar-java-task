@@ -18,29 +18,93 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class App 
 {
+	public static void result() throws IOException
+	{
+		FileReader fileReader=null;
+		Connection con=null;
+		ResultSet res=null;
+		PreparedStatement pstmt=null;
+		try 
+		{
+			//String dbrul="jdbc:mysql://localhost:3306/jdbc?";
+			//String uname="root1";
+			//String password="root1";
+
+			// reading the properties file here(for that created a file)
+			fileReader=new FileReader("propertiesfile");
+			Properties properties=new Properties();
+			properties.load(fileReader);
+			String dburl=properties.getProperty("dburl");
+			String username=properties.getProperty("username");
+			String password=properties.getProperty("password");
+			con=DriverManager.getConnection(dburl, username, password);
+			String query=properties.getProperty("query");
+			//String query="INSERT INTO business_partner (business_partner_id, business_partner_name, business_partner_code, contact_name, address1, address2, city, province, country, postal_code, parent_company, toll_free_number, phone, phone_extension, fax, website_url, payment_condition, gl_number, driver_min_age, api_enabled, status, one_way_fee_paid_by, country_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+			pstmt=con.prepareStatement(query);
+
+
+			//reading the data from excel sheet(info present in the properties file)
+			String bpdata=properties.getProperty("bp_data");
+			FileInputStream fileInputStream=new FileInputStream(bpdata);
+			Workbook workbook = new XSSFWorkbook(fileInputStream);
+
+
+			//getting the first sheet in the excel sheet
+			Sheet firstSheet = workbook.getSheetAt(0);
+			//to store the value to the database
+			int[] rows = jdbcmethod( pstmt, firstSheet);
+			System.out.println(rows.length);
+			System.out.println("inserted");
+		}
+		catch (SQLException e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if (con != null) {
+					con.close();
+				}
+				if (pstmt != null) {
+					pstmt.close();
+				}
+				if (res != null) {
+					res.close();
+				}
+				if (fileReader != null) {
+					fileReader.close();
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
 	public static int[] jdbcmethod(PreparedStatement pstmt, Sheet firstSheet) throws SQLException
 	{
-
 		try
 		{
-			for (int i = 1; i <= firstSheet.getLastRowNum(); i++)
+			for (int i = 1; i <= firstSheet.getLastRowNum(); i++)//getLastRowNum() will give you the total number of rows in a sheet
 			{
-				Row nextRow = firstSheet.getRow(i);
+				Row nextRow = firstSheet.getRow(i);//getRow(i) will give you the row at specified index
 
-				for (int j = 0; j < nextRow.getLastCellNum(); j++)
+				for (int j = 0; j < nextRow.getLastCellNum(); j++)//returns total how many cells are there in specified row or index of last cell
 				{
 
-					Cell nextCellinsheet = nextRow.getCell(j);
+					Cell nextCellinsheet = nextRow.getCell(j);//return the cell at specified index
 
 					if (nextCellinsheet == null)
 					{
 						nextCellinsheet = nextRow.getCell(j, Row.CREATE_NULL_AS_BLANK);
 					}
-					int columnIndexinsheet = nextCellinsheet.getColumnIndex();
+					int columnIndexinsheet = nextCellinsheet.getColumnIndex();//index of the cell
+					//System.out.println(columnIndexinsheet);
 					switch (columnIndexinsheet)
 					{
 					case 0:
-						int business_partner_id = (int) nextCellinsheet.getNumericCellValue();
+						int business_partner_id = (int) nextCellinsheet.getNumericCellValue();//the value of the cell as a number
+						//System.out.println("value"+nextCellinsheet.getNumericCellValue());
 						pstmt.setInt(1, business_partner_id);
 						break;
 					case 1:
@@ -88,7 +152,7 @@ public class App
 						pstmt.setString(12, toll_free_number);
 						break;
 					case 12:
-						nextCellinsheet.setCellType(nextCellinsheet.CELL_TYPE_STRING);
+						nextCellinsheet.setCellType(nextCellinsheet.CELL_TYPE_STRING);//converting into string type
 						String phone = nextCellinsheet.getStringCellValue();
 						pstmt.setString(13, phone);
 						break;
@@ -140,65 +204,16 @@ public class App
 			}
 			// execution of whole rows i.e batch
 		}
-
 		catch (SQLException e)
 		{
 			e.printStackTrace();
 		}
 		return pstmt.executeBatch();
-	}
-    public static void main( String[] args ) throws IOException
-    {
-    	FileReader fileReader=null;
-		Connection con=null;
-		ResultSet res=null;
-		PreparedStatement pstmt=null;
-		try 
-		{
-			//String dbrul="jdbc:mysql://localhost:3306/jdbc?";
-			//String uname="root1";
-			//String password="root1";
-			fileReader=new FileReader("C:/Users/Abhilash Pramod/Desktop/abhishek/ABHISHEK/path/abi.txt");
-			Properties properties=new Properties();
-			properties.load(fileReader);
-			String dburl=properties.getProperty("dburl");
-			String uname=properties.getProperty("uname");
-			String password=properties.getProperty("password");
-			con=DriverManager.getConnection(dburl, uname, password);
-			String query="INSERT INTO business_partner (business_partner_id, business_partner_name, business_partner_code, contact_name, address1, address2, city, province, country, postal_code, parent_company, toll_free_number, phone, phone_extension, fax, website_url, payment_condition, gl_number, driver_min_age, api_enabled, status, one_way_fee_paid_by, country_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-			pstmt=con.prepareStatement(query);
-			FileInputStream fileInputStream=new FileInputStream("C:/Users/Abhilash Pramod/Desktop/abhishek/ABHISHEK/New folder/bp_data.xlsx");
-			Workbook workbook = new XSSFWorkbook(fileInputStream);
-			Sheet firstSheet = workbook.getSheetAt(0);
-			int[] rows = jdbcmethod( pstmt, firstSheet);
-			System.out.println(rows.length);
-			System.out.println("inserted");
-		}
-		catch (SQLException e)
-		{
-			e.printStackTrace();
-		}
-		finally
-		{
-			try
-			{
-				if (con != null) {
-					con.close();
-				}
-				if (pstmt != null) {
-					pstmt.close();
-				}
-				if (res != null) {
-					res.close();
-				}
-				if (fileReader != null) {
-					fileReader.close();
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
 	}
-    }
+	public static void main( String[] args )throws IOException
+	{
+		result();
+	}
+}
 
